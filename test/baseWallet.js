@@ -3,9 +3,8 @@ const ethers = require("ethers");
 
 const Wallet = require("../build/BaseWallet");
 const OldWallet = require("../build/LegacyBaseWallet");
-const Module = require("../build/TestModuleRelayer");
+const TestModule = require("../build/TestModule");
 const OldTestModule = require("../build/OldTestModule");
-const NewTestModule = require("../build/NewTestModule");
 const Registry = require("../build/ModuleRegistry");
 const SimpleUpgrader = require("../build/SimpleUpgrader");
 
@@ -31,11 +30,11 @@ describe("BaseWallet", function () {
   before(async () => {
     deployer = manager.newDeployer();
     registry = await deployer.deploy(Registry);
-    module1 = await deployer.deploy(Module, {}, registry.contractAddress, true, 42);
-    module2 = await deployer.deploy(Module, {}, registry.contractAddress, false, 42);
-    module3 = await deployer.deploy(Module, {}, registry.contractAddress, true, 42);
+    module1 = await deployer.deploy(TestModule, {}, registry.contractAddress, true, 42);
+    module2 = await deployer.deploy(TestModule, {}, registry.contractAddress, false, 42);
+    module3 = await deployer.deploy(TestModule, {}, registry.contractAddress, true, 42);
     oldModule = await deployer.deploy(OldTestModule, {}, registry.contractAddress);
-    newModule = await deployer.deploy(NewTestModule, {}, registry.contractAddress);
+    newModule = module1;
   });
 
   beforeEach(async () => {
@@ -109,7 +108,7 @@ describe("BaseWallet", function () {
         await wallet.init(owner.address, [module1.contractAddress]);
         const module1IsAuthorised = await wallet.authorised(module1.contractAddress);
         assert.equal(module1IsAuthorised, true, "module1 should be authorised");
-        const walletAsModule = deployer.wrapDeployedContract(Module, wallet.contractAddress);
+        const walletAsModule = deployer.wrapDeployedContract(TestModule, wallet.contractAddress);
         const boolVal = await walletAsModule.contract.getBoolean();
         const uintVal = await walletAsModule.contract.getUint();
         const addressVal = await walletAsModule.contract.getAddress(nonowner.address);
@@ -136,12 +135,12 @@ describe("BaseWallet", function () {
         // removing module 1
         const upgrader = await deployer.deploy(SimpleUpgrader, {}, registry.contractAddress, [module1.contractAddress], []);
         await registry.registerModule(upgrader.contractAddress, ethers.utils.formatBytes32String("Removing module1"));
-        await module1.from(owner).addModule(wallet.contractAddress, upgrader.contractAddress);
+        await module1.from(owner).addModule(wallet.contractAddress, upgrader.contractAddress); 
         module1IsAuthorised = await wallet.authorised(module1.contractAddress);
         assert.equal(module1IsAuthorised, false, "module1 should not be authorised");
 
         // trying to execute static call delegated to module1 (it should fail)
-        const walletAsModule = deployer.wrapDeployedContract(Module, wallet.contractAddress);
+        const walletAsModule = deployer.wrapDeployedContract(TestModule, wallet.contractAddress);
         await assert.revertWith(walletAsModule.contract.getBoolean(), "BW: must be an authorised module for static call");
       });
     });

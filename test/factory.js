@@ -3,7 +3,7 @@ const ethers = require("ethers");
 const { bigNumberify } = require("ethers").utils;
 
 const Wallet = require("../build/BaseWallet");
-const Module = require("../build/BaseModule");
+const Module = require("../build/TestModule");
 const ModuleRegistry = require("../build/ModuleRegistry");
 const ENSRegistry = require("../build/ENSRegistry");
 const ENSRegistryWithFallback = require("../build/ENSRegistryWithFallback");
